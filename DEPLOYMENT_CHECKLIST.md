@@ -1,0 +1,21 @@
+# Deployment Checklist
+
+- [ ] Create GitHub repository and push project
+- [ ] Run `npm install`
+- [ ] Run `npm run build`
+- [ ] Create production PostgreSQL and set `DATABASE_URL`
+- [ ] Run `npx prisma generate`
+- [ ] Run `npx prisma db push`
+- [ ] Create MongoDB Atlas database and set `MONGODB_URI`
+- [ ] Add `NEXTAUTH_SECRET` and OAuth credentials if authentication is enabled
+- [ ] Add Stripe test keys for sandbox checkout
+- [ ] Add Stripe webhook secret and configure `/api/webhooks/stripe`
+- [ ] Add Resend/Twilio credentials if email/SMS are enabled
+- [ ] Add Sanity credentials if CMS is enabled
+- [ ] Add Redis if rate limiting/cache is enabled
+- [ ] Add Mapbox token if map UI is enabled
+- [ ] Add Sentry if error monitoring is enabled
+- [ ] Set `NEXT_PUBLIC_APP_URL`
+- [ ] Deploy to Vercel
+- [ ] Test `/`, `/archetypes/ecommerce`, `/playground`, `/contact`
+- [ ] Test `/api/archetypes` and `/api/listings`
