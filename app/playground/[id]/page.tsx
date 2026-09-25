@@ -19,8 +19,9 @@ export default function PlaygroundDetail() {
   const proofFeatures = getProofFeatures(id);
 
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
-  const [testMode, setTestMode] = useState(false);
-  const [count, setCount] = useState(0);
+const [testMode, setTestMode] = useState(false);
+const [count, setCount] = useState(0);
+const [testResults, setTestResults] = useState<Record<string, string>>({});
   const [query, setQuery] = useState("");
   const [copied, setCopied] = useState(false);
 
@@ -231,11 +232,35 @@ return result;`;
                         </div>
 
                         <button
-                          type="button"
-                          className="mt-3 border border-black rounded-lg px-4 py-2 text-sm font-bold hover:bg-white"
-                        >
-                          Run Test
-                        </button>
+  type="button"
+  onClick={() => {
+    if (feature.name === "Live Cart") {
+      const before = count;
+
+      setCount((current) => current + 1);
+
+      setTestResults((current) => ({
+        ...current,
+        [feature.id]: `Test passed: cart count increased from ${before} to ${before + 1}.`,
+      }));
+    }
+  }}
+  className="mt-3 border border-black rounded-lg px-4 py-2 text-sm font-bold hover:bg-white"
+>
+  Run Test
+</button>
+
+{testResults[feature.id] && (
+  <div className="mt-3 rounded-lg bg-white border p-3 text-sm">
+    <div className="font-bold text-emerald-700">
+      ✓ Test Passed
+    </div>
+
+    <div className="text-neutral-600 mt-1">
+      {testResults[feature.id]}
+    </div>
+  </div>
+)}
                       </div>
                     </div>
                   ))}
