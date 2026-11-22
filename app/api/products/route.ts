@@ -1,9 +1,15 @@
 import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 
-const products = [
-  { id: "p1", name: "Starter Kit", price: 49, inventory: 12, category: "kits" },
-  { id: "p2", name: "Pro Kit", price: 99, inventory: 8, category: "kits" },
-  { id: "p3", name: "Growth Pack", price: 149, inventory: 5, category: "packs" }
-];
-
-export async function GET() { return NextResponse.json(products); }
+export async function GET() {
+  try {
+    const products = await prisma.product.findMany({
+      where: { inventory: { gt: 0 } },
+      orderBy: { createdAt: "asc" }
+    });
+    return NextResponse.json(products);
+  } catch (error) {
+    console.error("Product query failed:", error);
+    return NextResponse.json({ error: "Unable to load products" }, { status: 500 });
+  }
+}
