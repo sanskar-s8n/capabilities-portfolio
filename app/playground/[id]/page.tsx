@@ -46,9 +46,11 @@ const [testResults, setTestResults] = useState<Record<string, string>>({});
     );
   }
 
-  const code = `// ${a.title} proof widget
-const result = await fetch("/api/${id}");
-return result;`;
+  const endpoints: Record<string, string> = {
+    ecommerce: "/api/products", listing: "/api/listings", content: "/api/content",
+    saas: "/api/dashboard/metrics", booking: "/api/bookings",
+  };
+  const code = `// ${a.title} proof widget\nconst result = await fetch("${endpoints[id]}");\nreturn result.json();`;
 
   async function copy() {
     await navigator.clipboard?.writeText(code);
@@ -86,7 +88,7 @@ return result;`;
 
             <span className="text-xs text-emerald-700 font-bold flex gap-1 items-center">
               <Check size={14} />
-              functional
+              interactive demo
             </span>
           </div>
 
@@ -232,28 +234,69 @@ return result;`;
                         </div>
 
                         <button
-  type="button"
-  onClick={() => {
-    if (feature.name === "Live Cart") {
-      const before = count;
+                          type="button"
+                          disabled={runningTests.includes(feature.id)}
+                          onClick={async () => {
+                            setRunningTests((current) => [...current, feature.id]);
+                            setTestResults((current) => {
+                              const next = { ...current };
+                              delete next[feature.id];
+                              return next;
+                            });
 
-      setCount((current) => current + 1);
+                            try {
+                              if (id === "ecommerce" && feature.name === "Live Cart") {
+                                const before = count;
+                                setCount((current) => current + 1);
+                                setTestResults((current) => ({
+                                  ...current,
+                                  [feature.id]: `PASS — cart count changed from ${before} to ${before + 1}.`,
+                                }));
+                                return;
+                              }
 
-      setTestResults((current) => ({
-        ...current,
-        [feature.id]: `Test passed: cart count increased from ${before} to ${before + 1}.`,
-      }));
-    }
-  }}
-  className="mt-3 border border-black rounded-lg px-4 py-2 text-sm font-bold hover:bg-white"
->
-  Run Test
-</button>
+                              const endpoints: Record<string, string> = {
+                                ecommerce: "/api/products",
+                                listing: "/api/listings",
+                                content: "/api/content",
+                                saas: "/api/dashboard/metrics",
+                                booking: "/api/bookings",
+                              };
+                              const response = await fetch(endpoints[id]);
+                              const payload = await response.json();
+
+                              if (!response.ok) {
+                                throw new Error(payload.error || `API returned ${response.status}`);
+                              }
+
+                              const summary =
+                                Array.isArray(payload) ? `${payload.length} records returned` :
+                                Array.isArray(payload.data) ? `${payload.data.length} listings returned` :
+                                typeof payload === "object" && payload !== null ? "Valid JSON response received" :
+                                "Response received";
+
+                              setTestResults((current) => ({
+                                ...current,
+                                [feature.id]: `PASS — ${endpoints[id]} responded successfully. ${summary}.`,
+                              }));
+                            } catch (error) {
+                              setTestResults((current) => ({
+                                ...current,
+                                [feature.id]: `FAIL — ${error instanceof Error ? error.message : "Request failed"}`,
+                              }));
+                            } finally {
+                              setRunningTests((current) => current.filter((item) => item !== feature.id));
+                            }
+                          }}
+                          className="mt-3 border border-black rounded-lg px-4 py-2 text-sm font-bold hover:bg-white disabled:opacity-50"
+                        >
+                          {runningTests.includes(feature.id) ? "Testing..." : "Run Test"}
+                        </button>
 
 {testResults[feature.id] && (
   <div className="mt-3 rounded-lg bg-white border p-3 text-sm">
-    <div className="font-bold text-emerald-700">
-      ✓ Test Passed
+    <div className={`font-bold ${testResults[feature.id].startsWith("PASS") ? "text-emerald-700" : "text-red-700"}`}>
+      {testResults[feature.id].startsWith("PASS") ? "✓ Test Passed" : "✕ Test Failed"}
     </div>
 
     <div className="text-neutral-600 mt-1">
