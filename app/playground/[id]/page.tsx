@@ -22,6 +22,7 @@ export default function PlaygroundDetail() {
 const [testMode, setTestMode] = useState(false);
 const [count, setCount] = useState(0);
 const [testResults, setTestResults] = useState<Record<string, string>>({});
+const [runningTests, setRunningTests] = useState<string[]>([]);
   const [query, setQuery] = useState("");
   const [copied, setCopied] = useState(false);
 
