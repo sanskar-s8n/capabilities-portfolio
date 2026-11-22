@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { archetypes } from "@/lib/constants";
 import { getProofFeatures } from "@/lib/proof-engine/registry";
@@ -25,6 +25,55 @@ const [testResults, setTestResults] = useState<Record<string, string>>({});
 const [runningTests, setRunningTests] = useState<string[]>([]);
   const [query, setQuery] = useState("");
   const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (id !== "ecommerce") return;
+    let active = true;
+    fetch("/api/products")
+      .then(async (response) => {
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || "Unable to load products");
+        return payload;
+      })
+      .then((items) => {
+        if (active) setProducts(items);
+      })
+      .catch((error) => {
+        if (active) setProductsError(error instanceof Error ? error.message : "Unable to load products");
+      });
+    return () => { active = false; };
+  }, [id]);
+
+  const cartCount = Object.values(cart).reduce((sum, quantity) => sum + quantity, 0);
+
+  async function checkout() {
+    if (cartCount === 0 || checkingOut) return;
+    setCheckingOut(true);
+    setCheckoutMessage("");
+    try {
+      const response = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          cartItems: Object.entries(cart).map(([productId, quantity]) => ({ productId, quantity }))
+        })
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Checkout failed");
+      if (result.mode === "stripe" && result.url) {
+        window.location.href = result.url;
+        return;
+      }
+      setCheckoutMessage(`Demo order created: ${result.orderId} · $ ${result.total}. No payment collected.`);
+      setCart({});
+      const refreshed = await fetch("/api/products");
+      if (refreshed.ok) setProducts(await refreshed.json());
+    } catch (error) {
+      setCheckoutMessage(error instanceof Error ? error.message : "Checkout failed");
+    } finally {
+      setCheckingOut(false);
+    }
+  }
 
   const data = useMemo(
     () =>
@@ -323,43 +372,58 @@ const [runningTests, setRunningTests] = useState<string[]>([]);
           {/* EXISTING LIVE DEMOS */}
           {id === "ecommerce" ? (
             <div className="mt-6">
-              <div className="grid grid-cols-2 gap-3">
-                {[
-                  "Starter Kit",
-                  "Pro Kit",
-                  "Growth Pack",
-                  "Enterprise",
-                ].map((p, i) => (
-                  <button
-                    key={p}
-                    type="button"
-                    onClick={() =>
-                      setCount((current) => current + 1)
-                    }
-                    className="border rounded-xl p-4 text-left hover:bg-neutral-50"
-                  >
-                    <div className="font-bold">
-                      {p}
+              {productsError && <p className="text-sm text-red-700 mb-3">{productsError}</p>}
+              {products.length === 0 && !productsError ? (
+                <p className="text-sm text-neutral-500">Loading products from the database...</p>
+              ) : (
+                <div className="grid grid-cols-2 gap-3">
+                  {products.map((product) => (
+                    <div key={product.id} className="border rounded-xl p-4">
+                      <div className="font-bold">{product.name}</div>
+                      <div className="text-sm text-neutral-500 mt-1">
+                        ${Number(product.price).toFixed(2)}
+                      </div>
+                      <div className="text-xs text-neutral-400 mt-1">
+                        {product.inventory} in stock
+                      </div>
+                      <button
+                        type="button"
+                        disabled={product.inventory <= 0}
+                        onClick={() => setCart((current) => ({
+                          ...current,
+                          [product.id]: Math.min((current[product.id] || 0) + 1, product.inventory)
+                        }))}
+                        className="mt-4 text-xs font-bold border rounded-lg px-3 py-2 hover:bg-neutral-50 disabled:opacity-40"
+                      >
+                        Add to cart +
+                      </button>
+                      {(cart[product.id] || 0) > 0 && (
+                        <div className="text-xs mt-2">In cart: {cart[product.id]}</div>
+                      )}
                     </div>
+                  ))}
+                </div>
+              )}
 
-                    <div className="text-sm text-neutral-500 mt-1">
-                      ${(49 + i * 50).toFixed(2)}
-                    </div>
-
-                    <div className="text-xs font-bold mt-4">
-                      Add to cart +
-                    </div>
-                  </button>
-                ))}
-              </div>
-
-              <div className="mt-4 rounded-xl bg-neutral-100 p-4 flex justify-between">
-                <span className="flex gap-2 items-center">
-                  <ShoppingCart size={17} />
-                  Cart items
-                </span>
-
-                <b>{count}</b>
+              <div className="mt-4 rounded-xl bg-neutral-100 p-4">
+                <div className="flex justify-between items-center">
+                  <span className="flex gap-2 items-center">
+                    <ShoppingCart size={17} />
+                    Cart items
+                  </span>
+                  <b>{cartCount}</b>
+                </div>
+                <button
+                  type="button"
+                  onClick={checkout}
+                  disabled={cartCount === 0 || checkingOut}
+                  className="mt-3 w-full rounded-xl bg-neutral-950 text-white py-3 text-sm font-bold disabled:opacity-40"
+                >
+                  {checkingOut ? "Processing..." : "Checkout"}
+                </button>
+                {checkoutMessage && (
+                  <p className="mt-3 text-sm text-neutral-700 break-words">{checkoutMessage}</p>
+                )}
               </div>
             </div>
           ) : id === "listing" ? (
