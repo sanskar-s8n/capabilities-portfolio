@@ -21,6 +21,11 @@ export default function PlaygroundDetail() {
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
 const [testMode, setTestMode] = useState(false);
 const [count, setCount] = useState(0);
+const [products, setProducts] = useState<Array<{ id: string; name: string; price: string; inventory: number }>>([]);
+const [cart, setCart] = useState<Record<string, number>>({});
+const [productsError, setProductsError] = useState("");
+const [checkoutMessage, setCheckoutMessage] = useState("");
+const [checkingOut, setCheckingOut] = useState(false);
 const [testResults, setTestResults] = useState<Record<string, string>>({});
 const [runningTests, setRunningTests] = useState<string[]>([]);
   const [query, setQuery] = useState("");
