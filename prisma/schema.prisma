@@ -18,6 +18,16 @@ model User {
   bookings  Booking[]
 }
 
+model ContactLead {
+  id               String   @id @default(cuid())
+  name             String
+  email            String
+  company          String?
+  archetypeInterest String
+  message          String
+  createdAt        DateTime @default(now())
+}
+
 model Product {
   id          String      @id @default(cuid())
   name        String
