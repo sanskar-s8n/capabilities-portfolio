@@ -81,25 +81,63 @@ export async function POST(req: Request) {
 
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
     const origin = process.env.NEXT_PUBLIC_APP_URL || new URL(req.url).origin;
-    const session = await stripe.checkout.sessions.create({
-      mode: "payment",
-      line_items: order.items.map((item) => ({
-        price_data: {
-          currency: "usd",
-          product_data: { name: item.product.name },
-          unit_amount: Math.round(Number(item.price) * 100)
-        },
-        quantity: item.quantity
-      })),
-      metadata: { orderId: order.id },
-      success_url: `${origin}/playground/ecommerce?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/playground/ecommerce?checkout=cancelled`
-    });
+    let session: Stripe.Checkout.Session;
+    try {
+      session = await stripe.checkout.sessions.create({
+        mode: "payment",
+        line_items: order.items.map((item) => ({
+          price_data: {
+            currency: "usd",
+            product_data: { name: item.product.name },
+            unit_amount: Math.round(Number(item.price) * 100)
+          },
+          quantity: item.quantity
+        })),
+        metadata: { orderId: order.id },
+        success_url: `${origin}/playground/ecommerce?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${origin}/playground/ecommerce?checkout=cancelled`
+      });
+    } catch (stripeError) {
+      await prisma.$transaction(async (tx) => {
+        await tx.order.updateMany({
+          where: { id: order.id, status: "PENDING" },
+          data: { status: "CANCELLED" }
+        });
+        for (const item of order.items) {
+          await tx.product.update({
+            where: { id: item.productId },
+            data: { inventory: { increment: item.quantity } }
+          });
+        }
+      });
+      throw stripeError;
+    }
 
-    await prisma.order.update({
-      where: { id: order.id },
-      data: { stripeSession: session.id }
-    });
+    try {
+      await prisma.order.update({
+        where: { id: order.id },
+        data: { stripeSession: session.id }
+      });
+    } catch (saveError) {
+      try {
+        await stripe.checkout.sessions.expire(session.id);
+      } catch (expireError) {
+        console.error("Could not expire unlinked Stripe session:", expireError);
+      }
+      await prisma.$transaction(async (tx) => {
+        await tx.order.updateMany({
+          where: { id: order.id, status: "PENDING" },
+          data: { status: "CANCELLED" }
+        });
+        for (const item of order.items) {
+          await tx.product.update({
+            where: { id: item.productId },
+            data: { inventory: { increment: item.quantity } }
+          });
+        }
+      });
+      throw saveError;
+    }
 
     return NextResponse.json({ mode: "stripe", orderId: order.id, url: session.url }, { status: 201 });
   } catch (error) {
