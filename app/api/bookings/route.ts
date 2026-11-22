@@ -49,6 +49,7 @@ export async function POST(req: Request) {
       data: {
         ...parsed.data,
         date,
+        slotKey: `${parsed.data.serviceName.toLowerCase()}|${parsed.data.date}|${parsed.data.timeSlot.toLowerCase()}`,
         phone: parsed.data.phone || null
       }
     });
