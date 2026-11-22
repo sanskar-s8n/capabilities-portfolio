@@ -62,8 +62,7 @@ model Booking {
   email       String
   phone       String?
   createdAt   DateTime      @default(now())
-
-  @@unique([serviceName, date, timeSlot, status])
+  slotKey     String?       @unique
 }
 
 enum UserRole {
