@@ -8,6 +8,7 @@ export function Navbar() {
         <nav className="flex gap-5 text-sm font-semibold">
           <Link href="/#archetypes" className="hover:text-neutral-500">Archetypes</Link>
           <Link href="/playground" className="hover:text-neutral-500">Playground</Link>
+          <Link href="/progress/phase-1" className="hover:text-neutral-500">Progress</Link>
           <Link href="/contact" className="hover:text-neutral-500">Contact</Link>
         </nav>
       </div>
