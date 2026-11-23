@@ -41,7 +41,7 @@ export default function PhaseThreePage() {
         <div>
           <div className="flex items-center gap-2"><CircleDashed size={20}/><p className="text-sm font-bold uppercase tracking-widest text-neutral-500">Still to verify</p></div>
           <h2 className="mt-2 text-3xl font-black">Final validation checklist</h2>
-          <div className="mt-7 space-y-3">{pending.map(([title,desc])=><div className="card p-5 flex gap-4" key={title}><TriangleAlert className="shrink-0 mt-1 text-amber-700" size={21}/><div><h3 className="font-bold">{title}</h3><p className="mt-1 text-sm leading-6 text-neutral-600">{desc}</p></div></div>)}</div>
+          <div className="mt-7 space-y-3">{pending.map(([title,desc])=><div className="card p-5 flex gap-4" key={title}><AlertTriangle className="shrink-0 mt-1 text-amber-700" size={21}/><div><h3 className="font-bold">{title}</h3><p className="mt-1 text-sm leading-6 text-neutral-600">{desc}</p></div></div>)}</div>
         </div>
       </div>
     </section>
