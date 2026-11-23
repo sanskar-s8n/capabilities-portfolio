@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, CheckCircle2, CircleDashed, CreditCard, ShieldCheck, TriangleAlert } from "lucide-react";
+import { ArrowLeft, CheckCircle2, CircleDashed, CreditCard, ShieldCheck, AlertTriangle } from "lucide-react";
 
 const done = [
   ["Stripe checkout-session creation", "When Stripe is configured, the server creates a hosted checkout session using trusted database prices."],
